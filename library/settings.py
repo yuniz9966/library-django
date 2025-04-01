@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     # 3-rd party
 
     # local
-    'first_app.apps.FirstAppConfig',
+    'books.apps.BooksConfig',
 ]
 
 MIDDLEWARE = [
