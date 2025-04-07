@@ -8,6 +8,8 @@ class AuthorBio(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)  # Благодаря этому auto_now_add это поле будет помечено как неизменяемое, а дата и время будут ставиться автоматически в момент создания объекта, один раз и всё
     updated_at = models.DateTimeField(auto_now=True)  # А вот здесь auto_now скажет системе, что поле будет заполняться автоматически И ПРИ СОЗДАНИИ, И ПРИ ОБНОВЛЕНИИ, каждый раз
 
+    def __str__(self):
+        return f"{self.author.name[0]}. {self.author.surname}'s BIO"  # Rouling's BIO (Sapkivsky's BIO)
 
 class Author(models.Model):
     name = models.CharField(max_length=30)
@@ -15,7 +17,9 @@ class Author(models.Model):
     bio = models.OneToOneField(  # Поле, позволяющее простроить связь O2O (One to One), тем самым настроив уникальность одного объекта относительно другого
         AuthorBio,  # тут мы указываем название класса с которым должна простроиться связь
         on_delete=models.PROTECT,  # обязательный параметр, мы указываем: что должно произойти со всеми вторичными объектами, если главный будет удалён (в нашем случае объекты защищены. Если профиль попробуют удалить - ничего не получится, пока на него ссылается какой-то автор)
-        null=True  # позволит нам заняться заполнением профиля уже после создания объекта автора
+        null=True,  # позволит нам заняться заполнением профиля уже после создания объекта автора
+        blank=True,
+        related_name='author'
     )
 
     def __str__(self):  # Переопределённый метод, который поможет нам видеть объекты в Админ панели не как Author object(1) и так далее, а как нормальное, описательное значение, например инициалы имени и фамилии, как у нас здесь
@@ -39,7 +43,8 @@ class Book(models.Model):
     author = models.ForeignKey(  # поле для создания связи O2M (One to Many) связи
         Author,  # так же указываем название класса с которым создаём связь
         on_delete=models.CASCADE,  # опять же, обязательный параметр. В нашем случае если вдруг какой-то автор будет удалён - все его книги, которые он писал, будут каскадно удалены в базе
-        null=True  # это значение позволит нам создавать книгу, не указывая автора сразу
+        null=True,  # это значение позволит нам создавать книгу, не указывая автора сразу
+        related_name="books"
     )
     pages = models.SmallIntegerField(null=True, blank=True)
     language = models.CharField(max_length=15, default="English")
@@ -47,3 +52,10 @@ class Book(models.Model):
 
     def __str__(self):  # вместо нечитабельного book object(n) мы будем получать название книги в таблице книг в Админ панели
         return self.title
+
+    class Meta:
+        verbose_name = "Book"
+        verbose_name_plural = "Books"
+        unique_together = ("title", "author")
+        ordering = ("release_year",)
+
