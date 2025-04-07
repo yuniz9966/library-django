@@ -60,6 +60,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'library.urls'
 
+# AUTH_USER_MODEL = '<app_name>.<ModelName>'
+# AUTH_USER_MODEL = 'auth.User'
+AUTH_USER_MODEL = 'books.User'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

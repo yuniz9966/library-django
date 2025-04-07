@@ -1,4 +1,38 @@
+from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.models import PermissionsMixin, UserManager
 from django.db import models
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
+
+class User(AbstractBaseUser, PermissionsMixin):
+    ROLE_CHOICES = [
+        ("ADMIN", "ADMIN"),
+        ("MODERATOR", "MODERATOR"),
+        ("LIB MEMBER", "LIB MEMBER"),
+    ]
+
+    username = models.CharField(max_length=45, unique=True)
+    email = models.EmailField(_('email address'), max_length=75, unique=True)
+    first_name = models.CharField(_("first name"), max_length=50)
+    last_name = models.CharField(_("last name"), max_length=50)
+    role = models.CharField(max_length=35, choices=ROLE_CHOICES, default="LIB MEMBER")
+    phone = models.CharField(max_length=45, null=True, blank=True)
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    date_joined = models.DateTimeField(default=timezone.now)
+    birth_day = models.DateField(null=True, blank=True)
+
+    objects = UserManager()
+
+    USERNAME_FIELD = "username"
+    REQUIRED_FIELDS = ["email",]
+
+    def __str__(self):
+        return self.email
+
+    class Meta:
+        db_table = "user"
 
 
 class AuthorBio(models.Model):
@@ -10,6 +44,9 @@ class AuthorBio(models.Model):
 
     def __str__(self):
         return f"{self.author.name[0]}. {self.author.surname}'s BIO"  # Rouling's BIO (Sapkivsky's BIO)
+
+    class Meta:
+        db_table = "author_bio"
 
 class Author(models.Model):
     name = models.CharField(max_length=30)
@@ -24,6 +61,9 @@ class Author(models.Model):
 
     def __str__(self):  # Переопределённый метод, который поможет нам видеть объекты в Админ панели не как Author object(1) и так далее, а как нормальное, описательное значение, например инициалы имени и фамилии, как у нас здесь
         return f"{self.name[0]}. {self.surname}"
+
+    class Meta:
+        db_table = "author"
 
 
 class Book(models.Model):
@@ -54,8 +94,8 @@ class Book(models.Model):
         return self.title
 
     class Meta:
+        db_table = "book"
         verbose_name = "Book"
         verbose_name_plural = "Books"
         unique_together = ("title", "author")
         ordering = ("release_year",)
-
