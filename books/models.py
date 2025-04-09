@@ -86,6 +86,8 @@ class Book(models.Model):
         null=True,  # это значение позволит нам создавать книгу, не указывая автора сразу
         related_name="books"
     )
+    price = models.DecimalField(max_digits=6, decimal_places=4, default=0.0)
+    discounted_price = models.DecimalField(max_digits=6, decimal_places=4, default=0.0)
     pages = models.SmallIntegerField(null=True, blank=True)
     language = models.CharField(max_length=15, default="English")
     isbn = models.CharField(max_length=50)
