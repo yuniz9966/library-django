@@ -217,7 +217,7 @@ from django.db.models import F
 
 # Book.objects.get(title="Django Test ORM Query Result").delete()
 
-deleted, _ = Book.objects.filter(rating=1.1).delete()
+# deleted, _ = Book.objects.filter(rating=1.1).delete()
 #
 # print(f"Удалено {deleted} записей -> {_}")
 
