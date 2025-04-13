@@ -4,10 +4,6 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'library.settings')
 django.setup()
 
-
-from books.models import Book
-
-
 # all_books = Book.objects.all()  # SELECT * FROM book;
 
 # print(all_books.query)
@@ -233,3 +229,70 @@ from django.db.models import F
 
 # for _ in range(10):
 #     print("HELLO")
+
+# from books.models import User
+#
+# user = User(
+#     username="NEWUniqueUser",
+#     email="newunique.email@gmail.com",
+#     first_name="Unique2",
+#     last_name="User2",
+# )
+# user.set_password("as-0dG<y0S8^d7fgtS<78")
+#
+# user.save()
+
+
+# books = Book.objects.all().values('title', 'genre', 'release_year')
+# books = Book.objects.all() -> SELECT * FROM books;
+# books = Book.objects.all().values('title') -> SELECT title FROM books;
+
+# print(books)
+#
+# first_book = books.first()
+# last_book = books.last()
+
+# print(first_book)
+# print(last_book)
+# print(books.exists())
+#
+# print(books.query)
+
+
+# req_book = Book.objects.get(genre="qwerqwerqwerqwer")
+# # SELECT * FROM books WHERE title = 'Home century';
+#
+# print(req_book)
+
+
+# req_books = Book.objects.filter(
+#     author__surname__startswith="S"
+# )
+#
+# print(req_books.query)
+# print(req_books)
+#
+# book = Book.objects.filter(
+#     rating__gte=5.7
+# )
+
+# from django.db.models import F
+#
+# bad_discount_books = Book.objects.filter(
+#     discounted_price__gt=F('price')
+# ).update(discounted_price=F('price') * .7)
+#
+# print(bad_discount_books.query)
+#
+# print(bad_discount_books)
+#
+#
+# # bad_discount_books = Book.objects.filter(
+# #     discounted_price__gt=22.45
+# # )
+#
+# Book.objects.filter(language="Russian").update(
+#     rating=F('rating') + 1
+# )
+
+
