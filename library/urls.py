@@ -17,12 +17,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from books.views import list_of_books, get_book_detail, book_create
+from books.views import list_of_books, get_book_detail, book_create, update_book, delete_book
 
 # http://127.0.0.1:8000/admin/
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('books/', list_of_books),
     path('books/<int:book_id>/', get_book_detail),
+    path('books/<int:book_id>/update/', update_book),
+    path('books/<int:book_id>/delete/', delete_book),
     path('books/create/', book_create),
 ]

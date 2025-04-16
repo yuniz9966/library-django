@@ -49,3 +49,53 @@ def book_create(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+@api_view(['PUT'])
+def update_book(request, book_id: int) -> Response:
+    try:
+        book = Book.objects.get(id=book_id)
+    except Book.DoesNotExist:
+        return Response(
+            data={
+                "message": "Book not found"
+            },
+            status=404
+        )
+
+    serializer = BookCreateSerializer(instance=book, data=request.data)
+
+    if serializer.is_valid():
+        serializer.save()
+
+        return Response(
+            data=serializer.data,
+            status=200
+        )
+
+    else:
+        return Response(
+            data=serializer.errors,
+            status=400
+        )
+
+
+@api_view(['DELETE'])
+def delete_book(request, book_id: int) -> Response:
+    try:
+        book = Book.objects.get(id=book_id)
+    except Book.DoesNotExist:
+        return Response(
+            data={
+                "message": "Book not found"
+            },
+            status=404
+        )
+
+    book.delete()
+
+    return Response(
+        data={
+            "message": "Book was deleted successfully."
+        },
+        status=204
+    )
