@@ -18,13 +18,15 @@ from django.contrib import admin
 from django.urls import path
 
 from books.views import (
-    BooksListCreateAPIView,
-    BookDetailUpdateDeleteAPIView,
+    # BooksListCreateAPIView,
+    BooksListCreateView,
+    # BookDetailUpdateDeleteAPIView,
+    BookDetailUpdateDeleteView,
 )
 
 # http://127.0.0.1:8000/admin/
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('books/', BooksListCreateAPIView.as_view()),
-    path('books/<int:book_id>/', BookDetailUpdateDeleteAPIView.as_view()),
+    path('books/', BooksListCreateView.as_view()),
+    path('books/<str:target_title>/', BookDetailUpdateDeleteView.as_view()),
 ]
