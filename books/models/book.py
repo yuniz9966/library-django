@@ -2,22 +2,18 @@ from django.db import models
 
 from books.models.author import Author
 from books.models.user import User
+from books.models.genres import Genre
 from books.models.user import get_first_admin
 
 
 class Book(models.Model):
-    GENRE_CHOICES = [  # специальный список значений, из которых можно выбирать жанры для книг. Если нам подходит вариант, что у нас будет всего несколько значений, никаких обновлений, дополнений и удалений не планируется с ними - подходит. В противном случае мы могли бы создать отдельную модель жанров и соединять её с нашими книгами
-        ('Fantasy', 'Fantasy'),
-        ('Science', 'Science'),  # значения тут указываются в виде кортежа, где первая строчка - как нам будет предложено значение в Админ панели, а вторая - как значение будет записано в базе данных
-        ('Cooking', 'Cooking'),
-        ('Business', 'Business'),
-        ('Psychology', 'Psychology'),
-        ('History', 'History'),
-    ]
-
     title = models.CharField(max_length=140)  # title VARCHAR(140)
     rating = models.FloatField(default=0.0)  # общий параметр, помогающий поставить значение по умолчанию, тогда поле явно заполнять не придётся
-    genre = models.CharField(max_length=30, choices=GENRE_CHOICES)  # наше то самое строковое поле с возможностью выбора конкретных жанров
+    genre = models.ForeignKey(
+        Genre,
+        related_name='books',
+        on_delete=models.PROTECT
+    )
     release_year = models.DateField()  # 2011-05-05 DATE
     author = models.ForeignKey(  # поле для создания связи O2M (One to Many) связи
         Author,  # так же указываем название класса с которым создаём связь
