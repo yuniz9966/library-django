@@ -4,6 +4,10 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework.generics import (
+    ListCreateAPIView,
+    RetrieveUpdateDestroyAPIView
+)
 
 
 from books.serializers import (
@@ -26,148 +30,197 @@ from books.models import Book
 #     )
 
 
-class BooksListCreateAPIView(APIView, PageNumberPagination):
-    page_size = 5
+class BooksListCreateView(ListCreateAPIView):
+    # queryset = Book.objects.all()
+    # serializer_class = BookListSerializer
 
-    def get_queryset(self, request: Request):
-        allowed_sort_fields = {'rating', 'price', 'release_year'}
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return BookListSerializer
+        return BookCreateSerializer
 
-        queryset: QuerySet[Book] = Book.objects.all()  # Queryset[<Book obj1>, ..., <Book obj150>]
-        # http://127.0.0.1:8000/books/?author=Smith&year=2008
+    def get_queryset(self):
+        queryset = Book.objects.all()
+        # http://localhost:8000/books/?author=Johnson
+        author_surname = self.request.query_params.get('author')
 
-        # # http://127.0.0.1:8000/books/?author=Brooks&author=Levy
-        # authors = request.query_params.getlist('author') #  { "author": ["Brooks", "Levy"] }
-
-        # http://127.0.0.1:8000/books/?author=Brooks
-        # FILTER PARAMS
-        authors = request.query_params.getlist('author') #  { "author": ["Brooks",] }
-        year = request.query_params.get('year')
-
-        # SORT PARAMS
-        sort_by = request.query_params.get('sort_by', 'rating')
-        sort_order = request.query_params.get('order', 'asc')
-
-        if authors:
+        if author_surname:
             queryset = queryset.filter(
-                author__surname__in=authors  # SELECT * FROM books WHERE author.surname IN ("Brooks", "Levy")
+                author__surname__iexact=author_surname
             )
-
-        if year:
-            try:
-                year = int(year)  # ?year=twenty two
-                queryset = queryset.filter(
-                    release_year__year=year
-                )
-            except ValueError:
-                queryset = queryset.none()
-
-        if sort_by not in allowed_sort_fields:
-            sort_by = 'rating'
-
-        if sort_order == 'desc':
-            sort_by = f"-{sort_by}"
-
-        queryset = queryset.order_by(sort_by)
 
         return queryset
 
-    def get_page_size(self, request):
-        page_size = request.query_params.get('page_size')
-
-        if page_size and page_size.isdigit():
-            return int(page_size)
-
-        return self.page_size
 
 
-    def get(self, request: Request) -> Response:
-        books = self.get_queryset(request=request)
-        results = self.paginate_queryset(queryset=books, request=request, view=self)
-        serializer = BookListSerializer(results, many=True)
 
-        return self.get_paginated_response(data=serializer.data)
+# class BooksListCreateAPIView(APIView, PageNumberPagination):
+#     page_size = 5
+#
+#     def get_queryset(self, request: Request):
+#         allowed_sort_fields = {'rating', 'price', 'release_year'}
+#
+#         queryset: QuerySet[Book] = Book.objects.all()  # Queryset[<Book obj1>, ..., <Book obj150>]
+#         # http://127.0.0.1:8000/books/?author=Smith&year=2008
+#
+#         # # http://127.0.0.1:8000/books/?author=Brooks&author=Levy
+#         # authors = request.query_params.getlist('author') #  { "author": ["Brooks", "Levy"] }
+#
+#         # http://127.0.0.1:8000/books/?author=Brooks
+#         # FILTER PARAMS
+#         authors = request.query_params.getlist('author') #  { "author": ["Brooks",] }
+#         year = request.query_params.get('year')
+#
+#         # SORT PARAMS
+#         sort_by = request.query_params.get('sort_by', 'rating')
+#         sort_order = request.query_params.get('order', 'asc')
+#
+#         if authors:
+#             queryset = queryset.filter(
+#                 author__surname__in=authors  # SELECT * FROM books WHERE author.surname IN ("Brooks", "Levy")
+#             )
+#
+#         if year:
+#             try:
+#                 year = int(year)  # ?year=twenty two
+#                 queryset = queryset.filter(
+#                     release_year__year=year
+#                 )
+#             except ValueError:
+#                 queryset = queryset.none()
+#
+#         if sort_by not in allowed_sort_fields:
+#             sort_by = 'rating'
+#
+#         if sort_order == 'desc':
+#             sort_by = f"-{sort_by}"
+#
+#         queryset = queryset.order_by(sort_by)
+#
+#         return queryset
+#
+#     def get_page_size(self, request):
+#         page_size = request.query_params.get('page_size')
+#
+#         if page_size and page_size.isdigit():
+#             return int(page_size)
+#
+#         return self.page_size
+#
+#
+#     def get(self, request: Request) -> Response:
+#         books = self.get_queryset(request=request)
+#         results = self.paginate_queryset(queryset=books, request=request, view=self)
+#         serializer = BookListSerializer(results, many=True)
+#
+#         return self.get_paginated_response(data=serializer.data)
+#
+#     def post(self, request: Request) -> Response:
+#         serializer = BookCreateSerializer(data=request.data)
+#
+#         if serializer.is_valid():
+#             serializer.save()  # create()
+#             return Response(
+#                 data=serializer.data,
+#                 status=status.HTTP_201_CREATED
+#             )
+#         else:
+#             return Response(
+#                 data=serializer.errors,
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
 
-    def post(self, request: Request) -> Response:
-        serializer = BookCreateSerializer(data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()  # create()
-            return Response(
-                data=serializer.data,
-                status=status.HTTP_201_CREATED
-            )
+class BookDetailUpdateDeleteView(RetrieveUpdateDestroyAPIView):
+    queryset = Book.objects.all()
+    lookup_field = 'title'
+    lookup_url_kwarg = 'target_title'
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return BookDetailSerializer
+        return BookCreateSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+
+        disc_price = response.data.get('discounted_price')
+        price = response.data.get('price')
+
+        if disc_price and price:
+            response.data['is_discounted'] = disc_price < price
         else:
-            return Response(
-                data=serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            response.data['is_discounted'] = False
+
+        return response
 
 
-class BookDetailUpdateDeleteAPIView(APIView):
-    def get(self, request: Request, **kwargs) -> Response:
-        try:
-            book = Book.objects.get(id=kwargs['book_id'])
-        except Book.DoesNotExist:
-            return Response(
-                data={
-                    "message": "BOOK NOT FOUND"
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
 
-        serializer = BookDetailSerializer(book)
-
-        return Response(
-            data=serializer.data,
-            status=status.HTTP_200_OK
-        )
-
-    def put(self, request: Request, **kwargs) -> Response:
-        try:
-            book = Book.objects.get(id=kwargs['book_id'])
-        except Book.DoesNotExist:
-            return Response(
-                data={
-                    "message": "Book not found"
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = BookCreateSerializer(instance=book, data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-
-            return Response(
-                data=serializer.data,
-                status=status.HTTP_200_OK
-            )
-
-        else:
-            return Response(
-                data=serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-    def delete(self, request: Request, **kwargs) -> Response:
-        try:
-            book = Book.objects.get(id=kwargs['book_id'])
-        except Book.DoesNotExist:
-            return Response(
-                data={
-                    "message": "Book not found"
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        book.delete()
-
-        return Response(
-            data={
-                "message": "Book was deleted successfully."
-            },
-            status=status.HTTP_204_NO_CONTENT
-        )
+# class BookDetailUpdateDeleteAPIView(APIView):
+#     def get(self, request: Request, **kwargs) -> Response:
+#         try:
+#             book = Book.objects.get(id=kwargs['book_id'])
+#         except Book.DoesNotExist:
+#             return Response(
+#                 data={
+#                     "message": "BOOK NOT FOUND"
+#                 },
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
+#
+#         serializer = BookDetailSerializer(book)
+#
+#         return Response(
+#             data=serializer.data,
+#             status=status.HTTP_200_OK
+#         )
+#
+#     def put(self, request: Request, **kwargs) -> Response:
+#         try:
+#             book = Book.objects.get(id=kwargs['book_id'])
+#         except Book.DoesNotExist:
+#             return Response(
+#                 data={
+#                     "message": "Book not found"
+#                 },
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
+#
+#         serializer = BookCreateSerializer(instance=book, data=request.data)
+#
+#         if serializer.is_valid():
+#             serializer.save()
+#
+#             return Response(
+#                 data=serializer.data,
+#                 status=status.HTTP_200_OK
+#             )
+#
+#         else:
+#             return Response(
+#                 data=serializer.errors,
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
+#
+#     def delete(self, request: Request, **kwargs) -> Response:
+#         try:
+#             book = Book.objects.get(id=kwargs['book_id'])
+#         except Book.DoesNotExist:
+#             return Response(
+#                 data={
+#                     "message": "Book not found"
+#                 },
+#                 status=status.HTTP_404_NOT_FOUND
+#             )
+#
+#         book.delete()
+#
+#         return Response(
+#             data={
+#                 "message": "Book was deleted successfully."
+#             },
+#             status=status.HTTP_204_NO_CONTENT
+#         )
 
 
 # @api_view(['GET', 'POST'])
