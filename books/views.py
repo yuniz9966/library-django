@@ -1,13 +1,18 @@
+from typing import Any
+
 from django.db.models import QuerySet
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.request import Request
-from rest_framework import status
+from rest_framework import status, filters
 from rest_framework.views import APIView
 from rest_framework.generics import (
     ListCreateAPIView,
     RetrieveUpdateDestroyAPIView
 )
+from django_filters.rest_framework import DjangoFilterBackend
+
 
 
 from books.serializers import (
@@ -29,27 +34,44 @@ from books.models import Book
 #         status=200
 #     )
 
-
 class BooksListCreateView(ListCreateAPIView):
-    # queryset = Book.objects.all()
-    # serializer_class = BookListSerializer
+    queryset = Book.objects.all()
+
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
+    filterset_fields = ['author__surname', 'publisher__email', 'genre']
+    search_fields = ['title']
+    ordering_fields = ['price', 'release_year']
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return BookListSerializer
         return BookCreateSerializer
 
-    def get_queryset(self):
-        queryset = Book.objects.all()
-        # http://localhost:8000/books/?author=Johnson
-        author_surname = self.request.query_params.get('author')
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
 
-        if author_surname:
-            queryset = queryset.filter(
-                author__surname__iexact=author_surname
-            )
+        context['include_related'] = self.request.query_params.get(
+            "include_related",
+            "false"
+        ).lower() == "true"
 
-        return queryset
+        return context
+
+    # def get_queryset(self):
+    #     queryset = Book.objects.all()
+    #     # http://localhost:8000/books/?author=Johnson
+    #     author_surname = self.request.query_params.get('author')
+    #
+    #     if author_surname:
+    #         queryset = queryset.filter(
+    #             author__surname__iexact=author_surname
+    #         )
+    #
+    #     return queryset
 
 
 

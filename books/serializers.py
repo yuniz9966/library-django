@@ -1,3 +1,5 @@
+from typing import Any
+
 from rest_framework import serializers
 
 from books.models import Book, User, Author
@@ -40,6 +42,22 @@ class BookListSerializer(serializers.ModelSerializer):
             'release_year',
             'price'
         ]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        if self.context.get('include_related'):
+            representation['publisher'] = {
+                "id": instance.publisher.id,
+                "username": instance.publisher.username,
+                "email": instance.publisher.email,
+                "phone": instance.publisher.phone,
+                "role": instance.publisher.role,
+            }
+        else:
+            representation.pop('publisher', None)
+
+        return representation
 
 
 class BookDetailSerializer(serializers.ModelSerializer):
