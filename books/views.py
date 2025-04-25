@@ -1,6 +1,6 @@
 from typing import Any
 
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Count
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -8,12 +8,47 @@ from rest_framework.request import Request
 from rest_framework import status, filters
 from rest_framework.views import APIView
 from rest_framework.generics import (
+    ListAPIView,
     ListCreateAPIView,
     RetrieveUpdateDestroyAPIView
 )
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework import mixins
+from rest_framework.decorators import action
+
+from books.models import Genre
+from books.serializers import GenreSerializer
 
 
+
+class GenreViewSet(ModelViewSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+
+    @action(
+        detail=False,
+        methods=['get',],
+        url_path='statistic'
+    )
+    def get_books_count_by_genre(self, request: Request) -> Response:
+        genres_statistic = Genre.objects.annotate( # SELECT *, count(books) as books_count FROM genre GROUP BY id;
+            books_count=Count('books')
+        )  # QuerySet[{"id": 1, "name": "Fantasy", "books_count": 45}, ...]
+
+        data = [
+            {
+                "id": g.id,
+                "name": g.name,
+                "books_count": g.books_count,
+            }
+            for g in genres_statistic
+        ]
+
+        return Response(
+            data=data,
+            status=status.HTTP_200_OK
+        )
 
 from books.serializers import (
     BookListSerializer,
@@ -21,6 +56,16 @@ from books.serializers import (
     BookCreateSerializer
 )
 from books.models import Book
+
+
+class BooksByRegularIsbn(ListAPIView):
+    serializer_class = BookListSerializer
+
+    def get_queryset(self):
+        queryset = Book.objects.filter(
+            isbn=self.kwargs.get("isbn")
+        )
+        return queryset
 
 
 # @api_view(['GET'])

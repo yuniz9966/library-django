@@ -32,6 +32,8 @@ class Book(models.Model):
     pages = models.SmallIntegerField(null=True, blank=True)
     language = models.CharField(max_length=15, default="English")
     isbn = models.CharField(max_length=50)
+    deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):  # вместо нечитабельного book object(n) мы будем получать название книги в таблице книг в Админ панели
         return self.title
