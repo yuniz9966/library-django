@@ -15,18 +15,32 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
+from rest_framework.routers import DefaultRouter, SimpleRouter
 
 from books.views import (
     # BooksListCreateAPIView,
     BooksListCreateView,
     # BookDetailUpdateDeleteAPIView,
     BookDetailUpdateDeleteView,
+    GenreViewSet,
+    BooksByRegularIsbn
 )
+
+router = DefaultRouter()
+
+router.register(r'genres', GenreViewSet)
+
 
 # http://127.0.0.1:8000/admin/
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('books/', BooksListCreateView.as_view()),
     path('books/<str:target_title>/', BookDetailUpdateDeleteView.as_view()),
-]
+    re_path(
+        r'^books-isbn/(?P<isbn>\d{3}-\d{1,5}-\d{1,7}-\d{1,7}-\d)/?$',
+        BooksByRegularIsbn.as_view()
+    ),
+] + router.urls
+
+# isbn = 3-1,5-1,7-1,7-1

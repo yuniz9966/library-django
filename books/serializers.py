@@ -2,7 +2,7 @@ from typing import Any
 
 from rest_framework import serializers
 
-from books.models import Book, User, Author
+from books.models import Book, User, Author, Genre
 
 
 class BookSerializer(serializers.Serializer):
@@ -158,3 +158,18 @@ class BookCreateSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genre
+        fields = '__all__'
+
+
+
+
+
+
