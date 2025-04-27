@@ -24,7 +24,7 @@ from books.views import (
     # BookDetailUpdateDeleteAPIView,
     BookDetailUpdateDeleteView,
     GenreViewSet,
-    BooksByRegularIsbn
+    BooksByRegularIsbn, AuthorCreateView
 )
 
 router = DefaultRouter()
@@ -41,6 +41,7 @@ urlpatterns = [
         r'^books-isbn/(?P<isbn>\d{3}-\d{1,5}-\d{1,7}-\d{1,7}-\d)/?$',
         BooksByRegularIsbn.as_view()
     ),
+    path('author-create/', AuthorCreateView.as_view()),
 ] + router.urls
 
 # isbn = 3-1,5-1,7-1,7-1

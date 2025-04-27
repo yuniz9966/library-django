@@ -10,15 +10,18 @@ from rest_framework.views import APIView
 from rest_framework.generics import (
     ListAPIView,
     ListCreateAPIView,
-    RetrieveUpdateDestroyAPIView
+    RetrieveUpdateDestroyAPIView,
+    CreateAPIView
 )
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from rest_framework import mixins
 from rest_framework.decorators import action
+from django.db import transaction
 
-from books.models import Genre
-from books.serializers import GenreSerializer
+from books.debug_tools import QueryDebug
+from books.models import Genre, Author
+from books.serializers import GenreSerializer, AuthorCreateSerializer
 
 
 
@@ -58,6 +61,15 @@ from books.serializers import (
 from books.models import Book
 
 
+class AuthorCreateView(CreateAPIView):
+    serializer_class = AuthorCreateSerializer
+    queryset = Author.objects.all()
+
+    @transaction.atomic
+    def perform_create(self, serializer):
+        serializer.save()
+
+
 class BooksByRegularIsbn(ListAPIView):
     serializer_class = BookListSerializer
 
@@ -80,7 +92,9 @@ class BooksByRegularIsbn(ListAPIView):
 #     )
 
 class BooksListCreateView(ListCreateAPIView):
-    queryset = Book.objects.all()
+    queryset = Book.objects.select_related(
+        'author', 'publisher'
+    ).all()
 
     filter_backends = [
         DjangoFilterBackend,
@@ -105,6 +119,10 @@ class BooksListCreateView(ListCreateAPIView):
         ).lower() == "true"
 
         return context
+
+    @QueryDebug(file_name='book_all.log')
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
     # def get_queryset(self):
     #     queryset = Book.objects.all()
