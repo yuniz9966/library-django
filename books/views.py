@@ -2,7 +2,7 @@ from typing import Any
 
 from django.db.models import QuerySet, Count
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination, CursorPagination
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status, filters
@@ -91,11 +91,28 @@ class BooksByRegularIsbn(ListAPIView):
 #         status=200
 #     )
 
-class BooksListCreateView(ListCreateAPIView):
-    queryset = Book.objects.select_related(
-        'author', 'publisher'
-    ).all()
 
+# class CustomNumberPagination(PageNumberPagination):
+#     page_size = 2
+#     page_query_param = 'page'
+#     max_page_size = 5
+
+# ?limit=5&offset=15 -> a$dpfhSfg87sd5f9G76sfFgn0ilwr
+
+# QuerySet[<Obj1>, <Obj2>, ..., <Obj163>] -> (page_size = 2) ->
+# -> PaginatedQuerySet[{"cursor_ID": "askldfjhasoidftas78d6f58as7d", "data": [<Obj1>, <Obj2>]}, {...}, ..., {...}]
+
+# class CustomCursorPagination(CursorPagination):
+#     page_size = 5
+#     ordering = '-release_year'
+
+
+class BooksListCreateView(ListCreateAPIView):
+    # queryset = Book.objects.select_related(
+    #     'author', 'publisher'
+    # ).all()
+    queryset = Book.objects.all()
+    # pagination_class = CustomNumberPagination
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
