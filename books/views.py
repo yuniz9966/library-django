@@ -3,6 +3,7 @@ from typing import Any
 from django.db.models import QuerySet, Count
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination, CursorPagination
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status, filters
@@ -21,8 +22,7 @@ from django.db import transaction
 
 from books.debug_tools import QueryDebug
 from books.models import Genre, Author
-from books.serializers import GenreSerializer, AuthorCreateSerializer
-
+from books.serializers import GenreSerializer, AuthorCreateSerializer, AuthorShortInfoSerializer
 
 
 class GenreViewSet(ModelViewSet):
@@ -65,9 +65,27 @@ class AuthorCreateView(CreateAPIView):
     serializer_class = AuthorCreateSerializer
     queryset = Author.objects.all()
 
+    def get_serializer_class(self):
+        if self.request.method in SAFE_METHODS:
+            return AuthorShortInfoSerializer
+        return AuthorCreateSerializer
+
     @transaction.atomic
-    def perform_create(self, serializer):
-        serializer.save()
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+
+        if 'surname' not in data or not data['surname']:
+            data['surname'] = 'UNKNOWN'
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+
+        self.perform_create(serializer)
+
+        return Response(
+            data=serializer.data,
+            status=status.HTTP_201_CREATED
+        )
 
 
 class BooksByRegularIsbn(ListAPIView):
