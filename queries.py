@@ -198,7 +198,6 @@ from django.db.models import Q
 
 from django.db.models import F
 
-
 # Book.objects.filter(id__in=[1, 2, 3]).update(rating=F('rating') - 1)
 
 # Book.objects.filter(id__in=[1,]).update(title=F('title') + "( SSS)")
@@ -296,10 +295,6 @@ from django.db.models import F
 # )
 
 
-
-
-
-
 # ===========================================================================================================
 # ===========================================================================================================
 
@@ -371,7 +366,6 @@ from django.db.models import F
 #     print(book.author, book.title)
 
 
-
 # from books.models import Book
 #
 #
@@ -407,7 +401,6 @@ from django.db.models import F
 #     print(book.id, book.title, round(book.price, 2), round(avg_price_subq, 2))
 
 
-
 # ------------------------------------------------------------------
 
 # from django.db.models import Subquery, OuterRef, Min
@@ -426,8 +419,6 @@ from django.db.models import F
 # # SELECT *, SUBQUERY(...) as min_price_by_author
 #
 # print(main_query.query)
-
-
 
 
 # from django.db.models import OuterRef, Subquery, Avg
@@ -472,7 +463,6 @@ from django.db.models import F
 # print(data)
 
 
-
 # ---------------------------------------------------------------------------
 
 # DJANGO DRF
@@ -482,43 +472,91 @@ from django.db.models import F
 # "{...}" -> SERIALIZER("{...}") -> {...} # Десериализация
 
 
-from books.serializers import BookSerializer
-
-from django.utils import timezone
-
-data = {
-    "title": "TEST TITLE",
-    "rating": 10.02,
-    "pages": 255,
-    "release_year": timezone.now().date(),
-}
-
-
-book_serializer = BookSerializer(data=data)
-
-book_serializer.is_valid()
-
-print(book_serializer.errors)
-print(book_serializer.validated_data)
+# from books.serializers import BookSerializer
+#
+# from django.utils import timezone
+#
+# data = {
+#     "title": "TEST TITLE",
+#     "rating": 10.02,
+#     "pages": 255,
+#     "release_year": timezone.now().date(),
+# }
+#
+#
+# book_serializer = BookSerializer(data=data)
+#
+# book_serializer.is_valid()
+#
+# print(book_serializer.errors)
+# print(book_serializer.validated_data)
 
 # print(book_serializer)
 
 
+# =======================================================
 
 
+# from books.models import Book
+#
+#
+# all_books = Book.objects.all()
+# print(all_books.query)
+#
+# upd_queryset = all_books.filter(
+#     genre=1
+# )
+# print(upd_queryset.query)
+#
+#
+# print(upd_queryset[0].genre)
 
 
+# from books.debug_tools import QueryDebug
+# from books.models import Book
+#
+#
+# all_books = Book.objects.select_related(
+#     'publisher', 'author', 'genre'
+# ).all()
+#
+# print(all_books.query)
+#
+#
+# with QueryDebug(file_name='queries.log') as qd:
+#     for b in all_books:
+#         print(b.id, b.publisher.email, b.author.surname, b.genre.name)
 
 
+from books.debug_tools import QueryDebug
+from books.models import Book, Author
+from django.db.models import Prefetch
 
 
+authors = Author.objects.all()
+
+print(authors.query)
+
+with QueryDebug(file_name='queries.log') as qd:
+    for a in authors:
+        print(a.surname)
+        for b in a.books.all():
+            print(b.title, b.publisher.email, b.genre.name)
 
 
-
-
-
-
-
-
-
-
+# authors = Author.objects.prefetch_related(
+#     Prefetch(
+#         'books',
+#         queryset=Book.objects.select_related(
+#             'genre', 'publisher'
+#         )
+#     )
+# )
+#
+# print(authors.query)
+#
+# with QueryDebug(file_name='queries.log') as qd:
+#     for a in authors:
+#         print(a.surname)
+#         for b in a.books.all():
+#             print(b.title, b.publisher.email, b.genre.name)

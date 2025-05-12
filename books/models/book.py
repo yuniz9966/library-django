@@ -4,6 +4,9 @@ from books.models.author import Author
 from books.models.user import User
 from books.models.genres import Genre
 from books.models.user import get_first_admin
+from django.utils import timezone
+
+from books.managers.books import SoftDeleteManager
 
 
 class Book(models.Model):
@@ -34,6 +37,14 @@ class Book(models.Model):
     isbn = models.CharField(max_length=50)
     deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
+
+    objects = SoftDeleteManager()
+
+    def delete(self, *args, **kwargs):
+        self.deleted = True
+        self.deleted_at = timezone.now()
+
+        self.save()
 
     def __str__(self):  # вместо нечитабельного book object(n) мы будем получать название книги в таблице книг в Админ панели
         return self.title

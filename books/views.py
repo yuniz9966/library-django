@@ -2,7 +2,8 @@ from typing import Any
 
 from django.db.models import QuerySet, Count
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination, CursorPagination
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status, filters
@@ -10,16 +11,18 @@ from rest_framework.views import APIView
 from rest_framework.generics import (
     ListAPIView,
     ListCreateAPIView,
-    RetrieveUpdateDestroyAPIView
+    RetrieveUpdateDestroyAPIView,
+    CreateAPIView
 )
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from rest_framework import mixins
 from rest_framework.decorators import action
+from django.db import transaction
 
-from books.models import Genre
-from books.serializers import GenreSerializer
-
+from books.debug_tools import QueryDebug
+from books.models import Genre, Author
+from books.serializers import GenreSerializer, AuthorCreateSerializer, AuthorShortInfoSerializer
 
 
 class GenreViewSet(ModelViewSet):
@@ -58,6 +61,33 @@ from books.serializers import (
 from books.models import Book
 
 
+class AuthorCreateView(CreateAPIView):
+    serializer_class = AuthorCreateSerializer
+    queryset = Author.objects.all()
+
+    def get_serializer_class(self):
+        if self.request.method in SAFE_METHODS:
+            return AuthorShortInfoSerializer
+        return AuthorCreateSerializer
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+
+        if 'surname' not in data or not data['surname']:
+            data['surname'] = 'UNKNOWN'
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+
+        self.perform_create(serializer)
+
+        return Response(
+            data=serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+
+
 class BooksByRegularIsbn(ListAPIView):
     serializer_class = BookListSerializer
 
@@ -79,9 +109,28 @@ class BooksByRegularIsbn(ListAPIView):
 #         status=200
 #     )
 
-class BooksListCreateView(ListCreateAPIView):
-    queryset = Book.objects.all()
 
+# class CustomNumberPagination(PageNumberPagination):
+#     page_size = 2
+#     page_query_param = 'page'
+#     max_page_size = 5
+
+# ?limit=5&offset=15 -> a$dpfhSfg87sd5f9G76sfFgn0ilwr
+
+# QuerySet[<Obj1>, <Obj2>, ..., <Obj163>] -> (page_size = 2) ->
+# -> PaginatedQuerySet[{"cursor_ID": "askldfjhasoidftas78d6f58as7d", "data": [<Obj1>, <Obj2>]}, {...}, ..., {...}]
+
+# class CustomCursorPagination(CursorPagination):
+#     page_size = 5
+#     ordering = '-release_year'
+
+
+class BooksListCreateView(ListCreateAPIView):
+    # queryset = Book.objects.select_related(
+    #     'author', 'publisher'
+    # ).all()
+    queryset = Book.objects.all()
+    # pagination_class = CustomNumberPagination
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
@@ -105,6 +154,10 @@ class BooksListCreateView(ListCreateAPIView):
         ).lower() == "true"
 
         return context
+
+    @QueryDebug(file_name='book_all.log')
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
     # def get_queryset(self):
     #     queryset = Book.objects.all()

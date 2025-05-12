@@ -1,6 +1,7 @@
 from typing import Any
 
 from rest_framework import serializers
+from django.db import transaction
 
 from books.models import Book, User, Author, Genre
 
@@ -31,6 +32,11 @@ class AuthorShortInfoSerializer(serializers.ModelSerializer):
 
 class BookListSerializer(serializers.ModelSerializer):
     author = AuthorShortInfoSerializer()
+    # genre = serializers.StringRelatedField()
+    genre = serializers.SlugRelatedField(
+        slug_field='name',
+        read_only=True
+    )
 
     class Meta:
         model = Book
@@ -94,7 +100,6 @@ class BookCreateSerializer(serializers.ModelSerializer):
             'rating',
             'genre',
             'release_year',
-            'author',
             'publisher_email',
             'price',
             'discounted_price',
@@ -159,10 +164,6 @@ class BookCreateSerializer(serializers.ModelSerializer):
 
         return instance
 
-
-
-
-
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre
@@ -171,5 +172,28 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 
+class AuthorCreateSerializer(serializers.ModelSerializer):
+    books = BookCreateSerializer(many=True, write_only=True)
 
+    class Meta:
+        model = Author
+        fields = [
+            'id',
+            'name',
+            'surname',
+            'books'
+        ]
 
+    def create(self, validated_data):
+        books_data = validated_data.pop('books')
+
+        with transaction.atomic():
+            author = Author.objects.create(**validated_data)
+
+            book_objects = [
+                Book(author=author, **book) for book in books_data
+            ]
+
+            Book.objects.bulk_create(book_objects)
+
+        return author
