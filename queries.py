@@ -528,20 +528,20 @@ from django.db.models import F
 #         print(b.id, b.publisher.email, b.author.surname, b.genre.name)
 
 
-from books.debug_tools import QueryDebug
-from books.models import Book, Author
-from django.db.models import Prefetch
-
-
-authors = Author.objects.all()
-
-print(authors.query)
-
-with QueryDebug(file_name='queries.log') as qd:
-    for a in authors:
-        print(a.surname)
-        for b in a.books.all():
-            print(b.title, b.publisher.email, b.genre.name)
+# from books.debug_tools import QueryDebug
+# from books.models import Book, Author
+# from django.db.models import Prefetch
+#
+#
+# authors = Author.objects.all()
+#
+# print(authors.query)
+#
+# with QueryDebug(file_name='queries.log') as qd:
+#     for a in authors:
+#         print(a.surname)
+#         for b in a.books.all():
+#             print(b.title, b.publisher.email, b.genre.name)
 
 
 # authors = Author.objects.prefetch_related(
@@ -560,3 +560,19 @@ with QueryDebug(file_name='queries.log') as qd:
 #         print(a.surname)
 #         for b in a.books.all():
 #             print(b.title, b.publisher.email, b.genre.name)
+
+
+
+from books.models import Book, Genre, User, Author
+from django.db.models import QuerySet
+from books.debug_tools import QueryDebug
+
+
+all_books: QuerySet = Book.objects.select_related(
+    'genre', 'publisher', 'author'
+)
+
+
+with QueryDebug(file_name='db_logs_sum_7.log') as qd:
+    for b in all_books:
+        print(b.title, b.rating, b.genre, b.publisher, b.author)
