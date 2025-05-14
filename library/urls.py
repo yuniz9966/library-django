@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, re_path
+from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.routers import DefaultRouter, SimpleRouter
 
 from books.views import (
@@ -24,7 +25,7 @@ from books.views import (
     # BookDetailUpdateDeleteAPIView,
     BookDetailUpdateDeleteView,
     GenreViewSet,
-    BooksByRegularIsbn, AuthorCreateView
+    BooksByRegularIsbn, AuthorCreateView,GetBook
 )
 
 router = DefaultRouter()
@@ -42,6 +43,8 @@ urlpatterns = [
         BooksByRegularIsbn.as_view()
     ),
     path('author-create/', AuthorCreateView.as_view()),
+    path('get-book/<str:book_title>/', GetBook.as_view()),
+    path('auth-login/', obtain_auth_token),
 ] + router.urls
 
 # isbn = 3-1,5-1,7-1,7-1

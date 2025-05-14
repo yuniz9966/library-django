@@ -197,3 +197,44 @@ class AuthorCreateSerializer(serializers.ModelSerializer):
             Book.objects.bulk_create(book_objects)
 
         return author
+
+    # def create(self, validated_data):
+    #     books_data = validated_data.pop('books')
+    #
+    #     try:
+    #         transaction.set_autocommit(False)
+    #         author = Author.objects.create(**validated_data)
+    #
+    #         book_objects = [
+    #             Book(author=author, **book) for book in books_data
+    #         ]
+    #         transaction.commit()
+    #
+    #         Book.objects.bulk_create(book_objects)
+    #     except Exception:
+    #         transaction.rollback()
+    #
+    #     return author
+    #
+    # def create(self, validated_data):
+    #     books_data = validated_data.pop('books')
+    #
+    #     try:
+    #         with transaction.atomic():
+    #             author = Author.objects.create(**validated_data)
+    #
+    #             book_objects = [
+    #                 Book(author=author, **book) for book in books_data
+    #             ]
+    #
+    #             if <condition>:
+    #                 transaction.set_rollback(True)
+    #
+    #
+    #             transaction.on_commit(lambda: "SUCCESS")
+    #
+    #             Book.objects.bulk_create(book_objects)
+    #     except:
+    #         ...
+    #
+    #     return author

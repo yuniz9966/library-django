@@ -1,7 +1,11 @@
 from typing import Any
-
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from django.core.serializers import serialize
 from django.db.models import QuerySet, Count
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin, DestroyModelMixin
 from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination, CursorPagination
 from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
@@ -12,7 +16,7 @@ from rest_framework.generics import (
     ListAPIView,
     ListCreateAPIView,
     RetrieveUpdateDestroyAPIView,
-    CreateAPIView
+    CreateAPIView, GenericAPIView
 )
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
@@ -25,8 +29,22 @@ from books.models import Genre, Author
 from books.serializers import GenreSerializer, AuthorCreateSerializer, AuthorShortInfoSerializer
 
 
+
+# class A(
+#     ListModelMixin,
+#     RetrieveModelMixin,
+#     DestroyModelMixin,
+#     GenericAPIView):
+#     queryset = ...
+#     serializer_class = ...
+#
+#     def post(self, request, *args, **kwargs):
+#         return self.create(request, *args, **kwargs)
+
+
+
 class GenreViewSet(ModelViewSet):
-    queryset = Genre.objects.all()
+    queryset = Genre.objects.all()  # SELECT * FROM genres; -> SELECT * FROM genres WHERE id IN (1, 7, 19)
     serializer_class = GenreSerializer
 
     @action(
@@ -64,6 +82,8 @@ from books.models import Book
 class AuthorCreateView(CreateAPIView):
     serializer_class = AuthorCreateSerializer
     queryset = Author.objects.all()
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
@@ -125,6 +145,12 @@ class BooksByRegularIsbn(ListAPIView):
 #     ordering = '-release_year'
 
 
+class GetBook(RetrieveUpdateDestroyAPIView):
+    queryset = Book.objects.all()
+    serializer_class = BookDetailSerializer
+    lookup_field = 'title'
+    lookup_url_kwarg = 'book_title'
+
 class BooksListCreateView(ListCreateAPIView):
     # queryset = Book.objects.select_related(
     #     'author', 'publisher'
@@ -158,6 +184,24 @@ class BooksListCreateView(ListCreateAPIView):
     @QueryDebug(file_name='book_all.log')
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+
+        if 'title' not in data or not data['title']:
+            data['title'] = 'UNKNOWN TITLE'
+
+        if 'release_year' not in data or not data['release_year']:
+            data['release_year'] = timezone.now()
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response(
+            data=serializer.data,
+            status=status.HTTP_201_CREATED
+        )
 
     # def get_queryset(self):
     #     queryset = Book.objects.all()
