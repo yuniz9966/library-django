@@ -1,6 +1,6 @@
 from typing import Any
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, DjangoModelPermissions
 from django.core.serializers import serialize
 from django.db.models import QuerySet, Count
 from django.utils import timezone
@@ -26,8 +26,10 @@ from django.db import transaction
 
 from books.debug_tools import QueryDebug
 from books.models import Genre, Author
-from books.serializers import GenreSerializer, AuthorCreateSerializer, AuthorShortInfoSerializer
-
+from books.permissions.owner_permissions import IsBookOwnerOrReadOnly, IsStaffAndOwner
+from books.permissions.specific_permissions import IsWorkHours
+from books.permissions.statistic_model_permissions import CanGetStatisticPermission
+from books.serializers import GenreSerializer, AuthorCreateSerializer, AuthorShortInfoSerializer, BookListSerializer
 
 
 # class A(
@@ -42,10 +44,28 @@ from books.serializers import GenreSerializer, AuthorCreateSerializer, AuthorSho
 #         return self.create(request, *args, **kwargs)
 
 
+class UserBooksListGenericView(ListAPIView):
+    serializer_class = BookListSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Book.objects.filter(
+            publisher=self.request.user
+        )
+
 
 class GenreViewSet(ModelViewSet):
     queryset = Genre.objects.all()  # SELECT * FROM genres; -> SELECT * FROM genres WHERE id IN (1, 7, 19)
     serializer_class = GenreSerializer
+    # permission_classes = [
+    #     DjangoModelPermissions,
+    #     CanGetStatisticPermission
+    # ]
+
+    def get_permissions(self):
+        if self.action == 'get_books_count_by_genre':
+            return [CanGetStatisticPermission()]
+        return [DjangoModelPermissions()]
 
     @action(
         detail=False,
@@ -297,6 +317,7 @@ class BooksListCreateView(ListCreateAPIView):
 
 class BookDetailUpdateDeleteView(RetrieveUpdateDestroyAPIView):
     queryset = Book.objects.all()
+    permission_classes = [IsBookOwnerOrReadOnly]
     lookup_field = 'title'
     lookup_url_kwarg = 'target_title'
 
