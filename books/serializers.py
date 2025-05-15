@@ -1,5 +1,7 @@
+import re
 from typing import Any
 
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from django.db import transaction
 
@@ -50,21 +52,21 @@ class BookListSerializer(serializers.ModelSerializer):
             'price'
         ]
 
-    # def to_representation(self, instance):
-    #     representation = super().to_representation(instance)
-    #
-    #     if self.context.get('include_related'):
-    #         representation['publisher'] = {
-    #             "id": instance.publisher.id,
-    #             "username": instance.publisher.username,
-    #             "email": instance.publisher.email,
-    #             "phone": instance.publisher.phone,
-    #             "role": instance.publisher.role,
-    #         }
-    #     else:
-    #         representation.pop('publisher', None)
-    #
-    #     return representation
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        if self.context.get('include_related'):
+            representation['publisher'] = {
+                "id": instance.publisher.id,
+                "username": instance.publisher.username,
+                "email": instance.publisher.email,
+                "phone": instance.publisher.phone,
+                "role": instance.publisher.role,
+            }
+        else:
+            representation.pop('publisher', None)
+
+        return representation
 
 
 class BookDetailSerializer(serializers.ModelSerializer):
