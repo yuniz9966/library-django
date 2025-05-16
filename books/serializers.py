@@ -1,5 +1,7 @@
+import re
 from typing import Any
 
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from django.db import transaction
 
@@ -44,6 +46,7 @@ class BookListSerializer(serializers.ModelSerializer):
             'title',
             'genre',
             'author',
+            'publisher',
             'rating',
             'release_year',
             'price'
