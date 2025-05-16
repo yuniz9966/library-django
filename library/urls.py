@@ -32,7 +32,7 @@ from books.views import (
     BooksByRegularIsbn,
     AuthorCreateView,
     GetBook,
-    UserBooksListGenericView
+    UserBooksListGenericView, LogInAPIView, LogOutAPIView
 )
 
 schema_view = get_schema_view(
@@ -67,7 +67,13 @@ urlpatterns = [
     ),
     path('author-create/', AuthorCreateView.as_view()),
     path('get-book/<str:book_title>/', GetBook.as_view()),
-    path('auth-login/', obtain_auth_token),
+    # path('auth-login/', obtain_auth_token),
+
+
+    path('auth-login/', LogInAPIView.as_view()),
+    path('auth-logout/', LogOutAPIView.as_view()),
+
+
     path('auth-login-jwt/', TokenObtainPairView.as_view()),
     path('token-refresh/', TokenRefreshView.as_view()),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0)),
