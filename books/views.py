@@ -1,3 +1,6 @@
+import datetime
+
+from django.contrib.auth import authenticate
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, DjangoModelPermissions, AllowAny
 from django.db.models import Count
@@ -13,9 +16,11 @@ from rest_framework.generics import (
     CreateAPIView
 )
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from django.db import transaction
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from books.debug_tools import QueryDebug
 from books.models import Genre, Author
@@ -199,5 +204,74 @@ class BookDetailUpdateDeleteView(RetrieveUpdateDestroyAPIView):
             response.data['is_discounted'] = disc_price < price
         else:
             response.data['is_discounted'] = False
+
+        return response
+
+
+
+# ===================================================================================================
+# ===================================================================================================
+# ===================================================================================================
+
+# User JWT Logic
+
+
+
+
+class LogInAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request: Request) -> Response:
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        user = authenticate(
+            request=request,
+            username=username,
+            password=password
+        )
+
+        if user:
+            refresh_token = RefreshToken.for_user(user)
+            access_token = refresh_token.access_token
+
+            access_expiry = datetime.datetime.fromtimestamp(access_token['exp'], datetime.UTC)
+            refresh_expiry = datetime.datetime.fromtimestamp(refresh_token['exp'], datetime.UTC)
+
+            response = Response(status=status.HTTP_200_OK)
+
+            response.set_cookie(
+                key='access_token',
+                value=str(access_token),
+                httponly=True,
+                secure=False,
+                samesite='Lax',
+                expires=access_expiry
+            )
+
+            response.set_cookie(
+                key='refresh_token',
+                value=str(refresh_token),
+                httponly=True,
+                secure=False,
+                samesite='Lax',
+                expires=refresh_expiry
+            )
+
+            return response
+
+        else:
+            return Response(
+                data={"message": "Invalid username or password."},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+
+class LogOutAPIView(APIView):
+    def post(self, request):
+        response = Response(status=status.HTTP_200_OK)
+
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
 
         return response
