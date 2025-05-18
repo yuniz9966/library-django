@@ -29,7 +29,7 @@ from books.permissions.statistic_model_permissions import CanGetStatisticPermiss
 from books.serializers import (
     GenreSerializer,
     AuthorCreateSerializer,
-    AuthorShortInfoSerializer
+    AuthorShortInfoSerializer, RegisterUserSerializer
 )
 from books.serializers import (
     BookListSerializer,
@@ -37,6 +37,7 @@ from books.serializers import (
     BookCreateSerializer
 )
 from books.models import Book
+from books.utils import set_jwt_cookies
 
 
 class UserBooksListGenericView(ListAPIView):
@@ -232,31 +233,11 @@ class LogInAPIView(APIView):
         )
 
         if user:
-            refresh_token = RefreshToken.for_user(user)
-            access_token = refresh_token.access_token
-
-            access_expiry = datetime.datetime.fromtimestamp(access_token['exp'], datetime.UTC)
-            refresh_expiry = datetime.datetime.fromtimestamp(refresh_token['exp'], datetime.UTC)
-
-            response = Response(status=status.HTTP_200_OK)
-
-            response.set_cookie(
-                key='access_token',
-                value=str(access_token),
-                httponly=True,
-                secure=False,
-                samesite='Lax',
-                expires=access_expiry
+            response = Response(
+                status=status.HTTP_200_OK
             )
 
-            response.set_cookie(
-                key='refresh_token',
-                value=str(refresh_token),
-                httponly=True,
-                secure=False,
-                samesite='Lax',
-                expires=refresh_expiry
-            )
+            set_jwt_cookies(response=response, user=user)
 
             return response
 
@@ -273,5 +254,23 @@ class LogOutAPIView(APIView):
 
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')
+
+        return response
+
+
+class RegisterUserAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request: Request) -> Response:
+        serializer = RegisterUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        response = Response(
+            data=serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+
+        set_jwt_cookies(response, user)
 
         return response

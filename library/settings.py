@@ -66,6 +66,11 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'library.urls'
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "0.0.0.0"
+EMAIL_PORT = 1025
+
 
 # AUTH_USER_MODEL = '<app_name>.<ModelName>'
 # AUTH_USER_MODEL = 'auth.User'
